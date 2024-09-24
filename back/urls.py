@@ -26,6 +26,8 @@ urlpatterns = [
     path('visualize', visualize_data, name=' visualize_harvest_data'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('signup', SignUpView.as_view(), name='signup'),
+    path('edit/<int:fuente_id>', edit_fuente, name='edit_fuente'),
+    path('delete/<int:fuente_id>', delete_fuente, name='delete_fuente'),
     # path('api/crsf', )
 
     path('login',login_user),

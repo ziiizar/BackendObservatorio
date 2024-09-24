@@ -1,4 +1,4 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from .utils import start_monitoring, stop_monitoring
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -132,6 +132,43 @@ def insert_fuente(request):
     return render(request, 'insert.html')
 
 
+
+def edit_fuente(request, fuente_id):
+    fuente = get_object_or_404(ApiFuente, id=fuente_id)
+
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo')
+        organizacion = request.POST.get('organizacion')
+        editores = request.POST.get('editores')
+        url = request.POST.get('url')
+        materia = request.POST.get('materia')
+        ejes_tematicos = request.POST.get('ejes_tematicos')
+        frecuencia = request.POST.get('frecuencia')
+
+        eje = EjeTematico.objects.get(id_eje=ejes_tematicos)
+
+        fuente.title = titulo
+        fuente.organization = organizacion
+        fuente.editores = editores
+        fuente.url = url
+        fuente.materia = materia
+        fuente.id_eje = eje
+        fuente.frequency = frecuencia
+
+        fuente.save()
+
+        return redirect('visualize_harvest_data')  # Puedes cambiar la redirección según tu preferencia.
+
+    return render(request, 'edit.html', {'fuente': fuente})
+
+def delete_fuente(request, fuente_id):
+    fuente = get_object_or_404(ApiFuente, id=fuente_id)
+
+    if request.method == 'POST':
+        fuente.delete()
+        return redirect('visualize_harvest_data')  # Cambia la redirección según tu preferencia.
+
+    return render(request, 'delete_confirmation.html', {'fuente': fuente})
 
 class SignUpView(APIView):
     def post(self, request):
