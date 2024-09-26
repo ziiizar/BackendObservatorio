@@ -12,6 +12,9 @@ from django.contrib.auth.models import User
 from django.middleware.csrf import get_token
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 @api_view(['GET'])
@@ -31,26 +34,24 @@ def get_registros(request):
 
 @api_view(['POST'])
 def login_user(request):
-    all_users = User.objects.all()
-    print('all_users') 
-    print(all_users) 
     if request.method == 'POST':
         username = request.data.get('username')
         password = request.data.get('password')
-        print("username, password")
-        print(username, password)
-        
-        user = authenticate(password=password,username=username)
-            
-   
-        print(user)
+
+        # Autenticar usuario
+        user = authenticate(password=password, username=username)
+
         if user is not None:
-            login(request, user)
+            # Si el usuario es válido, generamos los tokens JWT
+            refresh = RefreshToken.for_user(user)
+            
+            # Datos que retornamos junto con el token
             user_data = {
                'username': user.username,
-            #    'email': user.email,
                'lastName': user.last_name,
-               'is_superuser': user.is_superuser
+               'is_superuser': user.is_superuser,
+               'refresh': str(refresh),
+               'access': str(refresh.access_token),  # Token de acceso
             }
             return JsonResponse(user_data, safe=False)
         else:
@@ -58,6 +59,26 @@ def login_user(request):
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])  # El token JWT debe ser válido para acceder
+def get_user_from_token(request):
+    user = request.user  # El usuario ya es identificado por el token JWT
+    user_data = {
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'is_superuser': user.is_superuser
+    }
+    return JsonResponse(user_data, safe=False)
+
+
+
+
+
 @api_view(['GET'])
 def get_fuentes(request):
    if request.method == 'GET':
@@ -66,6 +87,7 @@ def get_fuentes(request):
       return Response(serializer.data)
 
 @api_view(['GET'])
+# @permission_classes([IsAuthenticated])
 def get_patents(request):
    if request.method == 'GET':
       patents = ApiPatente.objects.all()
