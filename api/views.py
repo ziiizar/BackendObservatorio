@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from .models import *
-from .serializers import RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer
+from .serializers import RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer, UserProfile
 import json
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
@@ -197,6 +197,8 @@ class SignUpView(APIView):
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+
+            UserProfile.objects.create(user=user)
             return Response({
                 'user': SignUpSerializer(user).data,
                 'message': 'User created successfully'
