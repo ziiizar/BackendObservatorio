@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 class ApiFuente(models.Model):
     id = models.BigIntegerField(primary_key=True)
@@ -52,3 +53,14 @@ class EjeTematico(models.Model):
     class Meta:
         managed = False
         db_table = 'eje_tematico'
+
+class CustomUser(AbstractUser):
+    role = models.CharField(max_length=50, choices=[
+        ('admin', 'Admin'),
+        ('observador', 'Observador'),
+        ('user', 'User')
+    ])
+    organization = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.username
