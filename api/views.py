@@ -196,14 +196,22 @@ class SignUpView(APIView):
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
+            print('aquiiii')
             user = serializer.save()
+            print(f"Usuario creado con ID: {user.id}")
+            # Crear el UserProfile usando los datos de request
+            user_profile = UserProfile.objects.get(user=user)
+            user_profile.role = request.data.get('role', '')
+            user_profile.organization = request.data.get('organization', '')
+            user_profile.save()
 
-            UserProfile.objects.create(user=user)
+
             return Response({
                 'user': SignUpSerializer(user).data,
                 'message': 'User created successfully'
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 def get_ejes(request):
