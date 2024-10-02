@@ -39,7 +39,7 @@ urlpatterns = [
     path('ejes',get_ejes, name="get_ejes" ),
     path("fuentes",get_fuentes),
     path("registros",get_registros),
-    path('insert', insert_fuente, name='insert'),
+    path('insert', InsertFuenteView.as_view(), name='insert'),
     path('users',get_all_users),
 
 

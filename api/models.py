@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class ApiFuente(models.Model):
-    id = models.BigIntegerField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=100)
     organization = models.CharField(max_length=100)
     frequency = models.IntegerField()

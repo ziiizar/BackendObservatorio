@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from .models import *
-from .serializers import RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer, UserProfile
+from .serializers import ApiFuenteCreateSerializer, ApiFuenteSerializer, RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer, UserProfile
 import json
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
@@ -123,37 +123,40 @@ def stop_monitoring_view(request, data_source_id):
     stop_monitoring(data_source)
     return redirect(vista_home)
 
-def insert_fuente(request):
-    if request.method == 'POST':
-        titulo = request.POST.get('titulo')
-        organizacion = request.POST.get('organizacion')
-        editores = request.POST.get('editores')
-        url = request.POST.get('url')
-        materia = request.POST.get('materia')
-        ejes_tematicos = request.POST.get('ejes_tematicos')
-        frecuencia = request.POST.get('frecuencia')
-        id_html = request.POST.get('id')
-        
-        eje=EjeTematico.objects.get(id_eje=ejes_tematicos)
-        nueva_fuente = ApiFuente(
-            id=id_html,
-            title=titulo,
-            organization=organizacion,
-            editores=editores,
-            url=url,
-            materia=materia,
-            id_eje=eje,
-            frequency=frecuencia,
-            is_monitoring = False
+
+
+class InsertFuenteView(APIView):
+    def post(self, request):
+        serializer = ApiFuenteCreateSerializer(data = request.data)
+        print("AQUIIIIIIIII")
+        if serializer.is_valid():
+     
+
+            try:
+                eje = EjeTematico.objects.get(id_eje=serializer.validated_data['id_eje'])
+            except EjeTematico.DoesNotExist:
+                return Response({'error': 'Eje temático no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+            nuevo_id = ApiFuente.objects.count() + 1 
+
             
-    
-    
-        )
-        nueva_fuente.save()
-        return redirect(vista_home)
-    return render(request, 'insert.html')
+            nueva_fuente = ApiFuente(
+                id = nuevo_id,
+                title=serializer.validated_data['title'],
+                organization=serializer.validated_data['organization'],
+                frequency=serializer.validated_data['frequency'],
+                is_monitoring=serializer.validated_data['is_monitoring'],
+                editores=serializer.validated_data['editores'],
+                materia=serializer.validated_data['materia'],
+                url=serializer.validated_data['url'],
+                id_eje=serializer.validated_data['id_eje']  
+            )
+            nueva_fuente.save()
 
+            return Response(ApiFuenteCreateSerializer(nueva_fuente).data, status=status.HTTP_201_CREATED)
+            
 
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 def edit_fuente(request, fuente_id):
     fuente = get_object_or_404(ApiFuente, id=fuente_id)
@@ -164,10 +167,10 @@ def edit_fuente(request, fuente_id):
         editores = request.POST.get('editores')
         url = request.POST.get('url')
         materia = request.POST.get('materia')
-        ejes_tematicos = request.POST.get('ejes_tematicos')
+        eje_tematico = request.POST.get('eje_tematico')
         frecuencia = request.POST.get('frecuencia')
 
-        eje = EjeTematico.objects.get(id_eje=ejes_tematicos)
+        eje = EjeTematico.objects.get(id_eje=eje_tematico)
 
         fuente.title = titulo
         fuente.organization = organizacion

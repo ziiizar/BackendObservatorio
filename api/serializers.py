@@ -65,3 +65,23 @@ class SignUpSerializer(serializers.ModelSerializer):
         )
 
         return user
+    
+
+    from rest_framework import serializers
+from .models import ApiFuente
+
+class ApiFuenteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApiFuente
+        fields = '__all__'
+
+class ApiFuenteCreateSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=100)
+    organization = serializers.CharField(max_length=100)
+    frequency = serializers.IntegerField()
+    is_monitoring = serializers.BooleanField(default=False)
+    editores = serializers.CharField(max_length=100)
+    materia = serializers.CharField(max_length=100)
+    url = serializers.CharField()
+    id_eje = serializers.PrimaryKeyRelatedField(queryset=EjeTematico.objects.all())  # Asegúrate de que exista
+
