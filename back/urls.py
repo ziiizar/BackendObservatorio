@@ -29,21 +29,25 @@ urlpatterns = [
     path('stop-monitoring/<int:data_source_id>', stop_monitoring_view, name='stop-monitoring'),
     path('visualize', visualize_data, name=' visualize_harvest_data'),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('signup', SignUpView.as_view(), name='signup'),
-    path('edit/<int:fuente_id>', edit_fuente, name='edit_fuente'),
-    path('delete/<int:fuente_id>', delete_fuente, name='delete_fuente'),
+   
     # path('api/crsf', )
 
+    path('signup', SignUpView.as_view(), name='signup'),
     path('login',login_user),
     path('patentes', get_patents, name="patentes"),
     path('patentes/total-pages', get_patents_total_pages, name="total_patentes"),
     path('ejes',get_ejes, name="get_ejes" ),
     path("fuentes",get_fuentes),
+    path('insert-fuente', InsertFuenteView.as_view(), name='insert'),
+    path('edit-fuente', edit_fuente, name='edit_fuente'),
+    path('delete-fuente', delete_fuente, name='delete_fuente'),
     path("registros",get_registros),
     path("registros/total-pages",get_registros_total_pages),
-    path('insert', InsertFuenteView.as_view(), name='insert'),
     path('users',get_all_users),
     path('users/total-pages',get_users_total_pages),
+    path('edit-user', edit_user, name='edit_user'),
+    path('delete-user', delete_user, name='edit_user'),
+
 
 
     # JWT paths

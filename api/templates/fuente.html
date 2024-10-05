@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles de la Fuente</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}"> <!-- Si tienes un archivo CSS -->
+</head>
+<body>
+    <h1>Detalles de la Fuente</h1>
+
+    <div>
+        <h2>{{ fuente.title }}</h2>
+        <p><strong>Organización:</strong> {{ fuente.organization }}</p>
+        <p><strong>Editores:</strong> {{ fuente.editores }}</p>
+        <p><strong>URL:</strong> <a href="{{ fuente.url }}" target="_blank">{{ fuente.url }}</a></p>
+        <p><strong>Materia:</strong> {{ fuente.materia }}</p>
+        <p><strong>Eje Temático:</strong> {{ fuente.id_eje.nombre_eje }}</p>
+        <p><strong>Frecuencia:</strong> {{ fuente.frequency }}</p>
+    </div>
+
+    <a href="{% url 'edit_fuente' fuente.id %}">Editar esta fuente</a>
+</body>
+</html>

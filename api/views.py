@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render, get_object_or_404
 from .utils import start_monitoring, stop_monitoring
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from .models import *
 from .serializers import ApiFuenteCreateSerializer, ApiFuenteSerializer, RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer, UserProfile
 import json
@@ -231,12 +231,11 @@ def stop_monitoring_view(request, data_source_id):
 class InsertFuenteView(APIView):
     def post(self, request):
         serializer = ApiFuenteCreateSerializer(data = request.data)
-        print("AQUIIIIIIIII")
         if serializer.is_valid():
-     
 
             try:
                 eje = EjeTematico.objects.get(id_eje=serializer.validated_data['id_eje'])
+                print(eje.id_eje)
             except EjeTematico.DoesNotExist:
                 return Response({'error': 'Eje temático no encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -252,49 +251,65 @@ class InsertFuenteView(APIView):
                 editores=serializer.validated_data['editores'],
                 materia=serializer.validated_data['materia'],
                 url=serializer.validated_data['url'],
-                id_eje=serializer.validated_data['id_eje']  
+                id_eje=eje  
             )
             nueva_fuente.save()
 
-            return Response(ApiFuenteCreateSerializer(nueva_fuente).data, status=status.HTTP_201_CREATED)
+            return Response(ApiFuenteSerializer(nueva_fuente).data, status=status.HTTP_201_CREATED)
             
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-def edit_fuente(request, fuente_id):
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(['PUT'])
+def edit_fuente(request):
+    fuente_id = request.data.get('id')
     fuente = get_object_or_404(ApiFuente, id=fuente_id)
 
-    if request.method == 'POST':
-        titulo = request.POST.get('titulo')
-        organizacion = request.POST.get('organizacion')
-        editores = request.POST.get('editores')
-        url = request.POST.get('url')
-        materia = request.POST.get('materia')
-        eje_tematico = request.POST.get('eje_tematico')
-        frecuencia = request.POST.get('frecuencia')
+    if request.method == 'PUT':
+        # Obtener los datos del formulario
+        titulo = request.data.get('title')
+        organizacion = request.data.get('organization')
+        editores = request.data.get('editores')
+        url = request.data.get('url')
+        materia = request.data.get('materia')
+        id_eje = request.data.get('id_eje')
+        frecuencia = request.data.get('frequency')
+        # Validar si se encuentra el eje temático, si no lanzar error
+        try:
+            eje = EjeTematico.objects.get(id_eje=id_eje)
+        except EjeTematico.DoesNotExist:
+            raise Http404("Eje temático no encontrado")
 
-        eje = EjeTematico.objects.get(id_eje=eje_tematico)
 
+        # Actualizar los campos de la fuente
         fuente.title = titulo
         fuente.organization = organizacion
         fuente.editores = editores
         fuente.url = url
         fuente.materia = materia
-        fuente.id_eje = eje
+        fuente.id_eje = eje  # Asignar la instancia de EjeTematico
         fuente.frequency = frecuencia
 
+        # Guardar los cambios
         fuente.save()
+        serializer = ApiFuenteSerializer(fuente)
 
-        return redirect('visualize_harvest_data')  # Puedes cambiar la redirección según tu preferencia.
 
-    return render(request, 'edit.html', {'fuente': fuente})
+        # Redirigir a una vista, puede ser la vista de detalle de la fuente
+        return Response(serializer.data, status=status.HTTP_200_OK)  # Cambia esta redirección según tu preferencia
 
-def delete_fuente(request, fuente_id):
+    # Renderizar el formulario con la fuente cargada
+    return render(request, 'fuente.html',{'fuente': fuente})
+
+@api_view(['DELETE'])
+def delete_fuente(request):
+
+    fuente_id = request.data.get('id')
     fuente = get_object_or_404(ApiFuente, id=fuente_id)
 
-    if request.method == 'POST':
+    if request.method == 'DELETE':
         fuente.delete()
-        return redirect('visualize_harvest_data')  # Cambia la redirección según tu preferencia.
+        return Response(status=status.HTTP_204_NO_CONTENT)  # Cambia la redirección según tu preferencia.
 
     return render(request, 'delete_confirmation.html', {'fuente': fuente})
 
@@ -318,6 +333,50 @@ class SignUpView(APIView):
                 'message': 'User created successfully'
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])  # O 'PATCH' si solo deseas actualizar algunos campos
+def edit_user(request):
+    try:
+        user_id = request.data.get('id')
+        user = User.objects.get(id=user_id)
+
+    # Deserializar los datos del request
+        user_serializer = SignUpSerializer(user, data=request.data, partial=True)  # Partial=True permite actualizaciones parciales
+        if user_serializer.is_valid():
+            user_serializer.save()  # Guardar cambios en el usuario
+
+            # Actualizar el perfil de usuario
+            user_profile, created = UserProfile.objects.get_or_create(user=user)  # Obtener o crear el perfil
+
+            # Actualizar campos del perfil
+            organization = request.data.get('organization')
+            role = request.data.get('role')
+            if organization is not None:
+                user_profile.organization = organization
+            
+            if role is not None:
+                user_profile.role = role
+            
+            user_profile.save()  # Guardar cambios en el perfil
+
+            return Response(user_serializer.data, status=status.HTTP_200_OK)  # Devolver los datos actualizados
+
+        return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+def delete_user(request):
+    try:
+        user_id = request.data.get('id')
+        user = User.objects.get(id=user_id)
+        user.delete()  # Eliminar el usuario
+        return Response(status=status.HTTP_204_NO_CONTENT)  # Respuesta sin contenido
+    except User.DoesNotExist:
+        return Response({'error': 'Usuario no encontrado'}, status=status.HTTP_404_NOT_FOUND)  # Usuario no encontrado
+    
 
 
 @api_view(['GET'])

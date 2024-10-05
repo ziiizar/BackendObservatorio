@@ -37,9 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class SignUpSerializer(serializers.ModelSerializer):
-    # password = serializers.CharField(write_only=True)
-    # phone_number = serializers.CharField(required=False, allow_blank=True)
-    # address = serializers.CharField(required=False, allow_blank=True)
+ 
     role = serializers.CharField(required=False, allow_blank=True)
     organization = serializers.CharField(required=False, allow_blank=True)
 
@@ -83,5 +81,5 @@ class ApiFuenteCreateSerializer(serializers.Serializer):
     editores = serializers.CharField(max_length=100)
     materia = serializers.CharField(max_length=100)
     url = serializers.CharField()
-    id_eje = serializers.PrimaryKeyRelatedField(queryset=EjeTematico.objects.all())  # Asegúrate de que exista
+    id_eje = serializers.IntegerField()
 
