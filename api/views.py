@@ -15,22 +15,90 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
+from math import ceil
 
 
 @api_view(['GET'])
 def get_all_users(request):
-    data = User.objects.all()
+
+    limit = request.query_params.get('limit', None)
+    offset = request.query_params.get('offset', 0)
+
+    try:
+        limit = int(limit) if limit is not None else None
+        offset = int(offset)
+    except ValueError:
+        return Response({"error": "Invalid limit or offset parameter"}, status=400)
+
+    data = User.objects.all()[offset:offset + limit] if limit is not None else User.objects.all()[offset:]
     users = UserSerializer(data, many=True)
     return Response(users.data)
+
+
+
+@api_view(['GET'])
+def get_users_total_pages(request):
+    if request.method == 'GET':
+        limit = request.query_params.get('limit', None)
+
+        try:
+            limit = int(limit) if limit is not None else None
+            if limit is None or limit <= 0:
+                return Response({"error": "Invalid or missing limit parameter"}, status=400)
+        except ValueError:
+            return Response({"error": "Invalid limit parameter"}, status=400)
+
+        # Obtener el total de registros
+        total_users = User.objects.count()
+
+        # Calcular el número de páginas
+        total_pages = ceil(total_users / limit) if limit else 1
+
+        return Response(total_pages)  
 
 # Create your views here.
 @api_view(['GET'])
 def get_registros(request):
-   if request.method == 'GET':
-    data_sources = ApiRegistros.objects.all()
-    serializer = RegistrosSerializer(data_sources, many=True)
-    return Response(serializer.data)
+    if request.method == 'GET':
+        # Obtener los parámetros 'limit' y 'offset' de la URL
+        limit = request.query_params.get('limit', None)
+        offset = request.query_params.get('offset', 0)  # Valor por defecto 0 para 'offset'
+
+        # Convertir los valores de limit y offset a enteros, o usar None si no se pasan correctamente
+        try:
+            limit = int(limit) if limit is not None else None
+            offset = int(offset)
+        except ValueError:
+            return Response({"error": "Invalid limit or offset parameter"}, status=400)
+
+        # Realizar la consulta con offset y limit
+        registros = ApiRegistros.objects.all()[offset:offset + limit] if limit is not None else ApiRegistros.objects.all()[offset:]
+
+        # Serializar los resultados
+        serializer = RegistrosSerializer(registros, many=True)
+        return Response(serializer.data)
     
+
+
+@api_view(['GET'])
+def get_registros_total_pages(request):
+    if request.method == 'GET':
+        limit = request.query_params.get('limit', None)
+
+        try:
+            limit = int(limit) if limit is not None else None
+            if limit is None or limit <= 0:
+                return Response({"error": "Invalid or missing limit parameter"}, status=400)
+        except ValueError:
+            return Response({"error": "Invalid limit parameter"}, status=400)
+
+        # Obtener el total de registros
+        total_registros = ApiRegistros.objects.count()
+
+        # Calcular el número de páginas
+        total_pages = ceil(total_registros / limit) if limit else 1
+
+        return Response(total_pages)    
 
 @api_view(['POST'])
 def login_user(request):
@@ -89,12 +157,47 @@ def get_fuentes(request):
 @api_view(['GET'])
 # @permission_classes([IsAuthenticated])
 def get_patents(request):
-   if request.method == 'GET':
-      patents = ApiPatente.objects.all()
-      serializer = PatentSerializer(patents, many=True)
-      return Response(serializer.data)   
+    if request.method == 'GET':
+        # Obtener los parámetros 'limit' y 'offset' de la URL
+        limit = request.query_params.get('limit', None)
+        offset = request.query_params.get('offset', 0)  # Valor por defecto 0 para 'offset'
+        
+        # Convertir los valores de limit y offset a enteros, o usar None si no se pasan correctamente
+        try:
+            limit = int(limit) if limit is not None else None
+            offset = int(offset)
+        except ValueError:
+            return Response({"error": "Invalid limit or offset parameter"}, status=400)
 
+        # Realizar la consulta con offset y limit
+        patents = ApiPatente.objects.all()[offset:offset + limit] if limit is not None else ApiPatente.objects.all()[offset:]
+
+        # Serializar los resultados
+        serializer = PatentSerializer(patents, many=True)
+        return Response(serializer.data)
    
+
+@api_view(['GET'])
+def get_patents_total_pages(request):
+    if request.method == 'GET':
+        limit = request.query_params.get('limit', None)
+
+        try:
+            limit = int(limit) if limit is not None else None
+            if limit is None or limit <= 0:
+                return Response({"error": "Invalid or missing limit parameter"}, status=400)
+        except ValueError:
+            return Response({"error": "Invalid limit parameter"}, status=400)
+
+        # Obtener el total de patentes
+        total_patents = ApiPatente.objects.count()
+
+        # Calcular el número de páginas
+        total_pages = ceil(total_patents / limit) if limit else 1
+
+        return Response(total_pages)   
+
+
 def vista_home(request):
     fuentes = ApiFuente.objects.all().order_by('id')      
     return render(request,'home.html',{'fuentes':fuentes})
@@ -197,6 +300,7 @@ def delete_fuente(request, fuente_id):
 
 class SignUpView(APIView):
     def post(self, request):
+        print(request.data)
         serializer = SignUpSerializer(data=request.data)
         if serializer.is_valid():
             print('aquiiii')

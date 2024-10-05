@@ -56,10 +56,22 @@ class EjeTematico(models.Model):
 
 
 class UserProfile(models.Model):
+    ADMIN = 'admin'
+    USER = 'user'
+    OBSERVADOR = 'observador'
+    DIRECTIVO = 'directivo'
+
+    ROLE_CHOICES = [
+        (ADMIN, 'Admin'),
+        (USER, 'User'),
+        (OBSERVADOR, 'Observador'),
+        (DIRECTIVO, 'Directivo'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
-    role = models.CharField(max_length=255, blank=True, null=True)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default=USER)  # Limitado a 10 caracteres por los valores posibles
     organization = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):

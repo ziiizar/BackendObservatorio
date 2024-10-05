@@ -36,11 +36,14 @@ urlpatterns = [
 
     path('login',login_user),
     path('patentes', get_patents, name="patentes"),
+    path('patentes/total-pages', get_patents_total_pages, name="total_patentes"),
     path('ejes',get_ejes, name="get_ejes" ),
     path("fuentes",get_fuentes),
     path("registros",get_registros),
+    path("registros/total-pages",get_registros_total_pages),
     path('insert', InsertFuenteView.as_view(), name='insert'),
     path('users',get_all_users),
+    path('users/total-pages',get_users_total_pages),
 
 
     # JWT paths
