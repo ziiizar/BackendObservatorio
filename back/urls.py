@@ -40,13 +40,13 @@ urlpatterns = [
     path("fuentes",get_fuentes),
     path('insert-fuente', InsertFuenteView.as_view(), name='insert'),
     path('edit-fuente', edit_fuente, name='edit_fuente'),
-    path('delete-fuente', delete_fuente, name='delete_fuente'),
+    path('delete-fuente/<int:fuente_id>', delete_fuente, name='delete_fuente'),
     path("registros",get_registros),
     path("registros/total-pages",get_registros_total_pages),
     path('users',get_all_users),
     path('users/total-pages',get_users_total_pages),
     path('edit-user', edit_user, name='edit_user'),
-    path('delete-user', delete_user, name='edit_user'),
+    path('delete-user/<int:id>', delete_user, name='delete_user'),
 
 
 
