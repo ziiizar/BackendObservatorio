@@ -2,20 +2,21 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth.models import User
 
+class FuenteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApiFuente
+        fields = '__all__'    
 class RegistrosSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApiRegistros
         fields = '__all__'
 
 class PatentSerializer(serializers.ModelSerializer):
+    sourceData = FuenteSerializer(source = 'fuente',read_only = True)
     class Meta:
         model = ApiPatente
         fields = '__all__'
 
-class FuenteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ApiFuente
-        fields = '__all__'    
 
 class EjeSerializer(serializers.ModelSerializer):
     class Meta:

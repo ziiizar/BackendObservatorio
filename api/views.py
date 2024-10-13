@@ -16,6 +16,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from math import ceil
+from django.db.models import CharField
+from django.db.models.functions import Cast
 
 
 @api_view(['GET'])
@@ -161,19 +163,20 @@ def get_user_from_token(request):
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
-        'is_superuser': user.is_superuser
+        'role': user.userprofile.role
     }
     return JsonResponse(user_data, safe=False)
 
 
 
-# Create your views here.
 @api_view(['GET'])
 def get_registros(request):
     if request.method == 'GET':
-        # Obtener los parámetros 'limit' y 'offset' de la URL
+        # Obtener los parámetros 'limit', 'offset', 'orderBy' y 'sortOrder' de la URL
         limit = request.query_params.get('limit', None)
         offset = request.query_params.get('offset', 0)  # Valor por defecto 0 para 'offset'
+        order_by = request.query_params.get('orderBy', None)  # Campo por defecto (None si no se pasa)
+        sort_order = request.query_params.get('sortOrder', 'asc')  # 'asc' o 'desc'
 
         # Convertir los valores de limit y offset a enteros, o usar None si no se pasan correctamente
         try:
@@ -182,13 +185,35 @@ def get_registros(request):
         except ValueError:
             return Response({"error": "Invalid limit or offset parameter"}, status=400)
 
-        # Realizar la consulta con offset y limit
-        registros = ApiRegistros.objects.all()[offset:offset + limit] if limit is not None else ApiRegistros.objects.all()[offset:]
+        # Consulta base
+        registros = ApiRegistros.objects.all()
+
+        # Si se especifica order_by, procesar la ordenación
+        if order_by:
+            # Validar que el campo de ordenación esté dentro de 'metadata'
+            allowed_fields = ['creator', 'title', 'subject', 'date', 'publisher', 'description']  # Agrega aquí otros campos permitidos
+
+            if order_by in allowed_fields:
+                # Crear el campo de orden dinámicamente usando 'metadata__'
+                sort_field = f'metadata__{order_by}__0'
+
+                # Si el orden es descendente, agregar el prefijo '-'
+                if sort_order == 'desc':
+                    registros = registros.order_by(f'-{sort_field}')
+                else:
+                    registros = registros.order_by(sort_field)
+            else:
+                return Response({"error": "Invalid sort field"}, status=400)
+
+        # Aplicar el paginado con offset y limit
+        if limit is not None:
+            registros = registros[offset:offset + limit]
+        else:
+            registros = registros[offset:]
 
         # Serializar los resultados
         serializer = RegistrosSerializer(registros, many=True)
         return Response(serializer.data)
-    
 
 
 @api_view(['GET'])
@@ -319,10 +344,11 @@ def delete_fuente(request, fuente_id):
 # @permission_classes([IsAuthenticated])
 def get_patents(request):
     if request.method == 'GET':
-        # Obtener los parámetros 'limit' y 'offset' de la URL
+        # Obtener los parámetros 'limit', 'offset' y 'orderBy' de la URL
         limit = request.query_params.get('limit', None)
         offset = request.query_params.get('offset', 0)  # Valor por defecto 0 para 'offset'
-        
+        order_by = request.query_params.get('orderBy', None)  # Nuevo parámetro para ordenar
+
         # Convertir los valores de limit y offset a enteros, o usar None si no se pasan correctamente
         try:
             limit = int(limit) if limit is not None else None
@@ -330,13 +356,21 @@ def get_patents(request):
         except ValueError:
             return Response({"error": "Invalid limit or offset parameter"}, status=400)
 
-        # Realizar la consulta con offset y limit
-        patents = ApiPatente.objects.all()[offset:offset + limit] if limit is not None else ApiPatente.objects.all()[offset:]
+        # Validar y aplicar el ordenamiento si se proporciona
+        valid_order_fields = ['id', 'abstract', 'description', 'claims', 'patent_office', 'url', 'fuente_id']  # Campos válidos para ordenar
+        if order_by and order_by not in valid_order_fields:
+            return Response({"error": f"Invalid orderBy parameter. Valid options are: {', '.join(valid_order_fields)}"}, status=400)
+
+        # Realizar la consulta con offset, limit y orden
+        queryset = ApiPatente.objects.all()
+        if order_by:
+            queryset = queryset.order_by(order_by)  # Aplicar el orden
+
+        patents = queryset[offset:offset + limit] if limit is not None else queryset[offset:]
 
         # Serializar los resultados
         serializer = PatentSerializer(patents, many=True)
         return Response(serializer.data)
-   
 
 @api_view(['GET'])
 def get_patents_total_pages(request):
@@ -395,7 +429,93 @@ def stop_monitoring_view(request, data_source_id):
 
 @api_view(['GET'])
 def get_ejes(request):
-   if request.method == 'GET':
-      ejes = EjeTematico.objects.all()
-      serializer = EjeSerializer(ejes, many=True)
-      return Response(serializer.data)   
+    if request.method == 'GET':
+        # Obtener los parámetros 'limit', 'offset' y 'orderBy' de la URL
+        limit = request.query_params.get('limit', None)
+
+        offset = request.query_params.get('offset', 0)  # Valor por defecto 0 para 'offset'
+        order_by = request.query_params.get('orderBy', None)  # Parámetro para ordenar
+
+        # Convertir los valores de limit y offset a enteros, o usar None si no se pasan correctamente
+        try:
+            limit = int(limit) if limit is not None else None
+            offset = int(offset)
+        except ValueError:
+            return Response({"error": "Invalid limit or offset parameter"}, status=400)
+
+        # Validar y aplicar el ordenamiento si se proporciona
+        valid_order_fields = ['id_eje', 'nombre_eje', 'esta_activo']  # Campos válidos para ordenar
+        if order_by and order_by not in valid_order_fields:
+            return Response({"error": f"Invalid orderBy parameter. Valid options are: {', '.join(valid_order_fields)}"}, status=400)
+
+        # Realizar la consulta con offset, limit y orden
+        queryset = EjeTematico.objects.all()
+        if order_by:
+            queryset = queryset.order_by(order_by)  # Aplicar el orden
+
+        # Obtener el total de ejes para el cálculo de páginas
+        total_ejes = queryset.count()
+
+        # Calcular el número total de páginas basado en el límite
+        if limit and limit > 0:
+            total_pages = ceil(total_ejes / limit)
+        else:
+            total_pages = 1  # Si no hay límite, solo hay una "página"
+
+        # Aplicar la paginación si se define el límite
+        ejes = queryset[offset:offset + limit] if limit is not None else queryset[offset:]
+
+        # Serializar los resultados
+        serializer = EjeSerializer(ejes, many=True)
+
+        # Devolver los ejes y el total de páginas
+        return Response({
+            'ejes': serializer.data,
+            'total_pages': total_pages,
+            'total_ejes': total_ejes
+        })
+
+
+
+@api_view(['POST'])
+def insert_eje(request):
+    if request.method == 'POST':
+        # Deserializar los datos del request usando el serializer
+        serializer = EjeSerializer(data=request.data)
+        
+        # Validar los datos
+        if serializer.is_valid():
+            # Si los datos son válidos, guardar el nuevo objeto EjeTematico
+            serializer.save()
+            return Response({"message": "Eje temático creado exitosamente", "eje": serializer.data}, status=201)
+        else:
+            # Si los datos no son válidos, devolver errores de validación
+            return Response(serializer.errors, status=400)
+
+
+
+@api_view(['PUT'])  # PUT para actualizar todo, PATCH para actualizar parcialmente
+def edit_eje(request):
+    try:
+        id_eje = request.data.get('id_eje')
+        eje = EjeTematico.objects.get(id_eje=id_eje)
+
+        # Deserializar y validar los datos del request
+        serializer = EjeSerializer(eje, data=request.data, partial=True)  # partial=True para actualizaciones parciales
+        if serializer.is_valid():
+            serializer.save()  # Guardar cambios
+            return Response(serializer.data, status=status.HTTP_200_OK)  # Devolver los datos actualizados
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  # Errores de validación
+    except EjeTematico.DoesNotExist:
+        return Response({'error': 'Eje temático no encontrado'}, status=status.HTTP_404_NOT_FOUND)  # Eje no encontrado
+
+
+@api_view(['DELETE'])
+def delete_eje(request, id_eje):
+    try:
+        # Buscar el eje temático por su id
+        eje = EjeTematico.objects.get(id_eje=id_eje)
+        eje.delete()  # Eliminar el eje temático
+        return Response(status=status.HTTP_204_NO_CONTENT)  # Respuesta sin contenido
+    except EjeTematico.DoesNotExist:
+        return Response({'error': 'Eje temático no encontrado'}, status=status.HTTP_404_NOT_FOUND)  # Eje no encontrado
