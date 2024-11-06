@@ -85,7 +85,7 @@ def start_monitoring(data_source):
             send_message("Comparando registros")
             compare_and_save(extracted_records, data_source)
           print(monitoring)
-          estado = fuente.objects.get(id=data_source.id)
+          estado = ApiFuente.objects.get(id=data_source.id)
           monitoring = estado.is_monitoring  
           if monitoring:
            print("espere: "+ str(data_source.frequency))   
