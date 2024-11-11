@@ -34,6 +34,7 @@ urlpatterns = [
 
     path('signup', SignUpView.as_view(), name='signup'),
     path('login',login_user),
+    path('logout',logout_user),
     path('patentes', get_patents, name="patentes"),
     path('patentes/total-pages', get_patents_total_pages, name="total_patentes"),
     path('ejes',get_ejes, name="get_ejes" ),
