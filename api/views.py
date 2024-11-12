@@ -126,47 +126,30 @@ def delete_user(request, id):
 
 @api_view(['POST'])
 def login_user(request):
-    print("AAAAAAAAAAAAAAAQUIIIIIIIIIIIII")
     if request.method == 'POST':
         username = request.data.get('username')
         password = request.data.get('password')
 
-        print(username,password)
         # Autenticar usuario
         user = authenticate(password=password, username=username)
 
         if user is not None:
-            # Generar tokens JWT
+            # Si el usuario es válido, generamos los tokens JWT
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-
-            # Crear la respuesta y añadir cookies HTTP-only
-            response = HttpResponse()
-
-            # Configurar cookies HTTP-only
-            response.set_cookie(
-                key='access_token',
-                value=access_token,
-                httponly=True,
-                secure=True,
-                samesite='Strict',  # Permitir que se envíen cookies en solicitudes cross-site
-                max_age=24 * 60 * 60  # 1 día en segundos
-            )
-            response.set_cookie(
-                key='refresh_token',
-                value=str(refresh),
-                httponly=True,
-                secure=True,
-                samesite='Strict',
-                max_age=7 * 24 * 60 * 60  # 7 días en segundos
-            )
-
-            return response
+            
+            # Datos que retornamos junto con el token
+            user_data = {
+               'username': user.username,
+               'lastName': user.last_name,
+               'is_superuser': user.is_superuser,
+               'refresh': str(refresh),
+               'access': str(refresh.access_token),  # Token de acceso
+            }
+            return JsonResponse(user_data, safe=False)
         else:
             return JsonResponse({'message': 'Invalid credentials'}, status=401)
     else:
         return JsonResponse({'message': 'Method not allowed'}, status=405)
-    
 
 @api_view(['POST'])
 def logout_user(request):
