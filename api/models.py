@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.timezone import now
 
 class ApiFuente(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -76,3 +77,39 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+
+class Boletin(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    title = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='boletines/imagenes/', blank=True, null=True)  # Para almacenar imágenes
+    theme = models.ForeignKey(
+        'EjeTematico',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='boletines'
+    )  # Referencia a fuente.materia
+    published_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='boletines_publicados'
+    )  # Usuario que publicó el boletín
+    labels = models.JSONField(blank=True, null=True)  # Arreglo opcional de etiquetas
+    attached_document = models.FileField(
+        upload_to='boletines/documentos/',
+        blank=True,
+        null=True
+    )  # Documento adjunto opcional
+    content = models.TextField()  # Contenido del boletín
+    publication_date = models.DateTimeField(default=now)  # Fecha de publicación
+
+    class Meta:
+        db_table = 'boletines'
+        ordering = ['-publication_date']  # Ordenar por fecha de publicación, el más reciente primero
+
+    def __str__(self):
+        return self.title

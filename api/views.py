@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.http import Http404, JsonResponse, HttpResponse
 from .models import *
-from .serializers import ApiFuenteCreateSerializer, ApiFuenteSerializer, RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer, UserProfile
+from .serializers import ApiFuenteCreateSerializer, ApiFuenteSerializer, RegistrosSerializer,PatentSerializer, SignUpSerializer,UserSerializer,FuenteSerializer, EjeSerializer, UserProfile, BoletinSerializer
 import json
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
@@ -537,3 +537,72 @@ def delete_eje(request, id_eje):
         return Response(status=status.HTTP_204_NO_CONTENT)  # Respuesta sin contenido
     except EjeTematico.DoesNotExist:
         return Response({'error': 'Eje temático no encontrado'}, status=status.HTTP_404_NOT_FOUND)  # Eje no encontrado
+
+
+
+
+
+
+
+@api_view(['POST'])
+def post_boletin(request):
+    if request.method == 'POST':
+        # Deserializar los datos enviados en la solicitud
+        serializer = BoletinSerializer(data=request.data)
+
+        # Validar los datos
+        if serializer.is_valid():
+            # Guardar el boletín en la base de datos
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        # Si no es válido, devolver errores
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_boletines(request):
+    if request.method == 'GET':
+        # Obtener los parámetros 'limit', 'offset' y 'orderBy' de la URL
+        limit = request.query_params.get('limit', None)
+        offset = request.query_params.get('offset', 0)
+        order_by = request.query_params.get('orderBy', None)
+
+        # Convertir los valores de limit y offset a enteros, o manejar errores
+        try:
+            limit = int(limit) if limit is not None else None
+            offset = int(offset)
+        except ValueError:
+            return Response({"error": "Invalid limit or offset parameter"}, status=400)
+
+        # Validar el ordenamiento si se proporciona
+        valid_order_fields = ['title', 'publication_date', 'id']  # Campos válidos para ordenar
+        if order_by and order_by not in valid_order_fields:
+            return Response({
+                "error": f"Invalid orderBy parameter. Valid options are: {', '.join(valid_order_fields)}"
+            }, status=400)
+
+        # Consultar los boletines
+        queryset = Boletin.objects.all()
+        if order_by:
+            queryset = queryset.order_by(order_by)  # Aplicar el orden
+
+        # Total de boletines y páginas
+        total_boletines = queryset.count()
+        if limit and limit > 0:
+            total_pages = ceil(total_boletines / limit)
+        else:
+            total_pages = 1  # Si no hay límite, una sola página
+
+        # Aplicar paginación
+        boletines = queryset[offset:offset + limit] if limit is not None else queryset[offset:]
+
+        # Serializar los resultados
+        serializer = BoletinSerializer(boletines, many=True)
+
+        # Responder con los boletines y metadatos
+        return Response({
+            'boletines': serializer.data,
+            'total_pages': total_pages,
+            'total_boletines': total_boletines
+        })

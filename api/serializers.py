@@ -84,3 +84,42 @@ class ApiFuenteCreateSerializer(serializers.Serializer):
     url = serializers.CharField()
     id_eje = serializers.IntegerField()
 
+
+
+class BoletinSerializer(serializers.ModelSerializer):
+    theme = EjeSerializer(read_only=True)  # Serializa el tema como un objeto
+    theme_id = serializers.PrimaryKeyRelatedField(
+        queryset=EjeTematico.objects.all(), source='theme', write_only=True
+    )  # Para aceptar solo el ID al crear o actualizar
+    published_by = UserSerializer(read_only=True)  # Serializa el usuario como un objeto completo
+    published_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source='published_by', write_only=True
+    )  # Para aceptar solo el ID del usuario
+    labels = serializers.JSONField(required=False)  # Campo opcional para etiquetas
+
+    class Meta:
+        model = Boletin
+        fields = [
+            'id',
+            'title',
+            'image',
+            'theme',
+            'theme_id',
+            'published_by',
+            'published_by_id',
+            'labels',
+            'attached_document',
+            'content',
+            'publication_date',
+        ]
+
+    def create(self, validated_data):
+        # Crear un boletín con los datos validados
+        return Boletin.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        # Actualizar los campos de un boletín
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance

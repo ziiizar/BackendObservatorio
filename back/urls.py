@@ -58,4 +58,9 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/get-user-from-token/', get_user_from_token, name='get_user_from_token'),
+
+
+    # Boletines paths
+    path('boletines', get_boletines, name='get_boletines'),  # Obtener boletines
+    path('boletines/create', post_boletin, name='post_boletin'),  # Crear un boletín
 ]
