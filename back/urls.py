@@ -21,6 +21,9 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from django.conf import settings  
+from django.conf.urls.static import static  
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -62,5 +65,9 @@ urlpatterns = [
 
     # Boletines paths
     path('boletines', get_boletines, name='get_boletines'),  # Obtener boletines
+    path('boletines/<int:boletin_id>/', get_boletin_by_id, name='get_boletin_by_id'),
     path('boletines/create', post_boletin, name='post_boletin'),  # Crear un boletín
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -14,7 +14,7 @@ class ApiFuente(models.Model):
     id_eje = models.ForeignKey('EjeTematico', models.DO_NOTHING, db_column='id_eje')
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'api_fuente'
        
 
@@ -29,7 +29,7 @@ class ApiPatente(models.Model):
     fuente = models.ForeignKey(ApiFuente, models.DO_NOTHING, blank=True, null=True)
      
     class Meta:
-        managed = False
+        managed = True
         db_table = 'api_patente'
 
 
@@ -43,7 +43,7 @@ class ApiRegistros(models.Model):
     fuente = models.ForeignKey(ApiFuente, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'api_registros'
 
 class EjeTematico(models.Model):
@@ -52,7 +52,7 @@ class EjeTematico(models.Model):
     esta_activo = models.BooleanField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'eje_tematico'
 
 

@@ -181,7 +181,9 @@ def get_user_from_token(request):
         'email': user.email,
         'first_name': user.first_name,
         'last_name': user.last_name,
-        'role': user.userprofile.role
+        'role': user.userprofile.role,
+        'id': user.id
+        
     }
     return JsonResponse(user_data, safe=False)
 
@@ -543,18 +545,33 @@ def delete_eje(request, id_eje):
 
 
 
-
 @api_view(['POST'])
 def post_boletin(request):
     if request.method == 'POST':
-        # Deserializar los datos enviados en la solicitud
-        serializer = BoletinSerializer(data=request.data)
+        # Convertir theme y published_by a números
+        data = request.data.copy()
+        print(data)
+        if 'theme' in data:
+            try:
+                data['theme_id'] = int(data.pop('theme')[0])
+            except (ValueError, IndexError):
+                return Response({'theme': 'Debe ser un número válido.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if 'published_by' in data:
+            try:
+                data['published_by_id'] = int(data.pop('published_by')[0])
+            except (ValueError, IndexError):
+                return Response({'published_by': 'Debe ser un número válido.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Validar los datos
+        # Pasar datos modificados al serializer
+        print('2da data')
+        print(data)
+        serializer = BoletinSerializer(data=data)
+
         if serializer.is_valid():
             # Guardar el boletín en la base de datos
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            boletin = serializer.save()
+            return Response(BoletinSerializer(boletin).data, status=status.HTTP_201_CREATED)
 
         # Si no es válido, devolver errores
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -606,3 +623,20 @@ def get_boletines(request):
             'total_pages': total_pages,
             'total_boletines': total_boletines
         })
+
+
+def get_boletin_by_id(request, boletin_id):
+    if request.method == 'GET':
+        boletin = get_object_or_404(Boletin, id=boletin_id)
+        response_data = {
+            "id": boletin.id,
+            "title": boletin.title,
+            "content": boletin.content,
+            "theme": {
+                "id": boletin.theme.id_eje,
+                "nombre_eje": boletin.theme.nombre_eje
+            } if boletin.theme else None,
+            "image": boletin.image.url if boletin.image else None,
+            "publication_date": boletin.publication_date,
+        }
+    return JsonResponse(response_data, safe=False)

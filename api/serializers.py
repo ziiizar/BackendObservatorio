@@ -96,6 +96,7 @@ class BoletinSerializer(serializers.ModelSerializer):
         queryset=User.objects.all(), source='published_by', write_only=True
     )  # Para aceptar solo el ID del usuario
     labels = serializers.JSONField(required=False)  # Campo opcional para etiquetas
+    # image = serializers.SerializerMethodField()
 
     class Meta:
         model = Boletin
@@ -123,3 +124,8 @@ class BoletinSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url)
+        return None
